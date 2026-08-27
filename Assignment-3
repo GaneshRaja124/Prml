@@ -1,0 +1,240 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+data = np.loadtxt("noisy_4.txt")
+
+x = data[:, 0]
+y = data[:, 1]
+
+print("Number of data points:", len(x))
+print("X minimum:", np.min(x))
+print("X maximum:", np.max(x))
+print("Y minimum:", np.min(y))
+print("Y maximum:", np.max(y))
+
+np.random.seed(42)
+
+n = len(x)
+
+indices = np.arange(n)
+np.random.shuffle(indices)
+
+train_size = int(0.60 * n)
+test_size = int(0.20 * n)
+
+train_indices = indices[:train_size]
+test_indices = indices[train_size:train_size + test_size]
+validation_indices = indices[train_size + test_size:]
+
+x_train = x[train_indices]
+y_train = y[train_indices]
+
+x_test = x[test_indices]
+y_test = y[test_indices]
+
+x_validation = x[validation_indices]
+y_validation = y[validation_indices]
+
+print("\nDataset Split:")
+print("Training set size:", len(x_train))
+print("Test set size:", len(x_test))
+print("Validation set size:", len(x_validation))
+
+def create_polynomial_matrix(x, degree):
+
+    X = np.ones((len(x), degree + 1))
+
+    for i in range(1, degree + 1):
+        X[:, i] = x ** i
+
+    return X
+
+def calculate_coefficients(X, y):
+
+    XT = X.T
+
+    A = XT @ X
+    B = XT @ y
+    w = np.linalg.solve(A, B)
+
+    return w
+
+def predict(X, w):
+
+    y_pred = X @ w
+
+    return y_pred
+
+def calculate_mse(y_actual, y_pred):
+
+    error = y_actual - y_pred
+
+    mse = np.mean(error ** 2)
+
+    return mse
+
+degrees = range(1, 11)
+
+train_mse_values = []
+test_mse_values = []
+
+print("\nPolynomial Regression Results:")
+print("-" * 65)
+print(f"{'Degree':<10}{'Training MSE':<20}{'Test MSE':<20}")
+print("-" * 65)
+
+
+for degree in degrees:
+
+    X_train = create_polynomial_matrix(
+        x_train,
+        degree
+    )
+
+    w = calculate_coefficients(
+        X_train,
+        y_train
+    )
+
+    y_train_pred = predict(
+        X_train,
+        w
+    )
+
+    train_mse = calculate_mse(
+        y_train,
+        y_train_pred
+    )
+
+    X_test = create_polynomial_matrix(
+        x_test,
+        degree
+    )
+
+    y_test_pred = predict(
+        X_test,
+        w
+    )
+
+    test_mse = calculate_mse(
+        y_test,
+        y_test_pred
+    )
+
+    train_mse_values.append(train_mse)
+    test_mse_values.append(test_mse)
+
+
+    print(
+        f"{degree:<10}"
+        f"{train_mse:<20.6f}"
+        f"{test_mse:<20.6f}"
+    )
+
+best_index = np.argmin(test_mse_values)
+
+best_degree = list(degrees)[best_index]
+
+best_test_mse = test_mse_values[best_index]
+
+print("\nBest Polynomial Degree:", best_degree)
+print("Best Test MSE:", best_test_mse)
+
+X_train_best = create_polynomial_matrix(
+    x_train,
+    best_degree
+)
+
+w_best = calculate_coefficients(
+    X_train_best,
+    y_train
+)
+
+X_validation = create_polynomial_matrix(
+    x_validation,
+    best_degree
+)
+
+y_validation_pred = predict(
+    X_validation,
+    w_best
+)
+
+validation_mse = calculate_mse(
+    y_validation,
+    y_validation_pred
+)
+
+print("Validation MSE:", validation_mse)
+
+print("\nFinal Polynomial Coefficients:")
+
+for i in range(len(w_best)):
+    print(f"w{i} = {w_best[i]}")
+
+plt.figure(figsize=(10, 6))
+
+plt.plot(
+    list(degrees),
+    train_mse_values,
+    marker='o',
+    label="Training MSE"
+)
+
+plt.plot(
+    list(degrees),
+    test_mse_values,
+    marker='o',
+    label="Test MSE"
+)
+
+plt.xlabel("Polynomial Degree")
+plt.ylabel("Mean Squared Error")
+plt.title("Effect of Polynomial Degree on MSE")
+
+plt.xticks(list(degrees))
+plt.legend()
+plt.grid()
+
+plt.show()
+
+X_all = create_polynomial_matrix(
+    x,
+    best_degree
+)
+
+y_pred_all = predict(
+    X_all,
+    w_best
+)
+
+sort_indices = np.argsort(x)
+
+x_sorted = x[sort_indices]
+y_pred_sorted = y_pred_all[sort_indices]
+
+
+plt.figure(figsize=(10, 6))
+
+plt.scatter(
+    x,
+    y,
+    s=5,
+    label="Noisy Data"
+)
+
+plt.plot(
+    x_sorted,
+    y_pred_sorted,
+    linewidth=2,
+    label=f"Degree {best_degree} Polynomial"
+)
+
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Final Polynomial Regression Model")
+
+plt.legend()
+plt.grid()
+
+plt.show()
