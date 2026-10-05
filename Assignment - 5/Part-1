@@ -1,0 +1,922 @@
+import random
+import math as m
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# 1. NUMBER OF DATA POINTS
+# ============================================================
+
+N = 10000
+
+print("AI5707 - Assignment 5")
+print("Question 1")
+print("=" * 60)
+print("Points per class :", N)
+print("Total points     :", 3 * N)
+
+
+# ============================================================
+# 2. GENERATE STANDARD NORMAL DATA
+# Same method used in the previous assignment
+# ============================================================
+
+def generate_standard_normal(N):
+
+    x_values = []
+    y_values = []
+
+    while len(x_values) < N:
+
+        u1 = random.uniform(-1, 1)
+        u2 = random.uniform(-1, 1)
+
+        s = (u1 ** 2) + (u2 ** 2)
+
+        if 0 < s < 1:
+
+            k = m.sqrt((-2 * m.log(s)) / s)
+
+            x = u1 * k
+            y = u2 * k
+
+            x_values.append(x)
+            y_values.append(y)
+
+    return np.column_stack((x_values, y_values))
+
+
+# ============================================================
+# 3. GENERATE DATA WITH SPECIFIED MEAN AND COVARIANCE
+# ============================================================
+
+def generate_class(N, mean, covariance):
+
+    # Generate standard normal data
+    data = generate_standard_normal(N)
+
+    # Cholesky decomposition
+    L = np.linalg.cholesky(covariance)
+
+    # Transform standard normal data
+    data = data @ L.T
+
+    # Add mean
+    data = data + mean
+
+    return data
+
+
+# ============================================================
+# 4. CLASS MEANS
+# ============================================================
+
+mean1 = np.array([0, 0])
+mean2 = np.array([5, 5])
+mean3 = np.array([0, 7])
+
+means = [
+    mean1,
+    mean2,
+    mean3
+]
+
+
+# ============================================================
+# 5. COVARIANCE MATRICES
+# ============================================================
+
+# ------------------------------------------------------------
+# A. Sigma^2 I
+# ------------------------------------------------------------
+
+cov_spherical = np.array([
+    [1, 0],
+    [0, 1]
+])
+
+
+# ------------------------------------------------------------
+# B. Diagonal covariance
+# ------------------------------------------------------------
+
+cov_diagonal = np.array([
+    [2, 0],
+    [0, 5]
+])
+
+
+# ------------------------------------------------------------
+# C. Full covariance
+# ------------------------------------------------------------
+
+cov_full = np.array([
+    [3, 1.2],
+    [1.2, 2]
+])
+
+
+# ============================================================
+# 6. FUNCTION TO GENERATE THREE CLASSES
+# ============================================================
+
+def generate_three_classes(means, covariances):
+
+    class1 = generate_class(
+        N,
+        means[0],
+        covariances[0]
+    )
+
+    class2 = generate_class(
+        N,
+        means[1],
+        covariances[1]
+    )
+
+    class3 = generate_class(
+        N,
+        means[2],
+        covariances[2]
+    )
+
+    # Combine all data
+    X = np.vstack((
+        class1,
+        class2,
+        class3
+    ))
+
+    # Create labels
+    y = np.hstack((
+        np.zeros(N),
+        np.ones(N),
+        np.full(N, 2)
+    ))
+
+    return X, y
+
+
+# ============================================================
+# 7. PLOT GENERATED DATA
+# ============================================================
+
+def plot_generated_data(X, y, title):
+
+    plt.figure(figsize=(8, 6))
+
+    for c in range(3):
+
+        data = X[y == c]
+
+        plt.scatter(
+            data[:, 0],
+            data[:, 1],
+            s=5,
+            label="Class " + str(c + 1)
+        )
+
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.title(title)
+    plt.legend()
+    plt.grid()
+
+    plt.show()
+
+
+# ============================================================
+# 8. GENERATE SIX REQUIRED DATASETS
+# ============================================================
+
+print("\nGenerating datasets...")
+
+
+# ------------------------------------------------------------
+# Experiment 1
+# Sigma^2 I - Same covariance
+# ------------------------------------------------------------
+
+covariances = [
+    cov_spherical,
+    cov_spherical,
+    cov_spherical
+]
+
+X1, y1 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+# ------------------------------------------------------------
+# Experiment 2
+# Diagonal - Same covariance
+# ------------------------------------------------------------
+
+covariances = [
+    cov_diagonal,
+    cov_diagonal,
+    cov_diagonal
+]
+
+X2, y2 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+# ------------------------------------------------------------
+# Experiment 3
+# Full - Same covariance
+# ------------------------------------------------------------
+
+covariances = [
+    cov_full,
+    cov_full,
+    cov_full
+]
+
+X3, y3 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+# ------------------------------------------------------------
+# Experiment 4
+# Sigma^2 I - Different covariance
+# ------------------------------------------------------------
+
+cov_spherical_1 = np.array([
+    [1, 0],
+    [0, 1]
+])
+
+cov_spherical_2 = np.array([
+    [2, 0],
+    [0, 2]
+])
+
+cov_spherical_3 = np.array([
+    [3, 0],
+    [0, 3]
+])
+
+covariances = [
+    cov_spherical_1,
+    cov_spherical_2,
+    cov_spherical_3
+]
+
+X4, y4 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+# ------------------------------------------------------------
+# Experiment 5
+# Diagonal - Different covariance
+# ------------------------------------------------------------
+
+cov_diagonal_1 = np.array([
+    [1, 0],
+    [0, 3]
+])
+
+cov_diagonal_2 = np.array([
+    [2, 0],
+    [0, 5]
+])
+
+cov_diagonal_3 = np.array([
+    [4, 0],
+    [0, 2]
+])
+
+covariances = [
+    cov_diagonal_1,
+    cov_diagonal_2,
+    cov_diagonal_3
+]
+
+X5, y5 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+# ------------------------------------------------------------
+# Experiment 6
+# Full - Different covariance
+# ------------------------------------------------------------
+
+cov_full_1 = np.array([
+    [2, 0.8],
+    [0.8, 3]
+])
+
+cov_full_2 = np.array([
+    [3, -1.0],
+    [-1.0, 2]
+])
+
+cov_full_3 = np.array([
+    [2, 0.5],
+    [0.5, 4]
+])
+
+covariances = [
+    cov_full_1,
+    cov_full_2,
+    cov_full_3
+]
+
+X6, y6 = generate_three_classes(
+    means,
+    covariances
+)
+
+
+print("All datasets generated successfully.")
+
+
+# ============================================================
+# 9. SHOW GENERATED DATA
+# ============================================================
+
+plot_generated_data(
+    X1,
+    y1,
+    "Experiment 1 - Sigma^2 I - Same Covariance"
+)
+
+plot_generated_data(
+    X2,
+    y2,
+    "Experiment 2 - Diagonal - Same Covariance"
+)
+
+plot_generated_data(
+    X3,
+    y3,
+    "Experiment 3 - Full - Same Covariance"
+)
+
+plot_generated_data(
+    X4,
+    y4,
+    "Experiment 4 - Sigma^2 I - Different Covariance"
+)
+
+plot_generated_data(
+    X5,
+    y5,
+    "Experiment 5 - Diagonal - Different Covariance"
+)
+
+plot_generated_data(
+    X6,
+    y6,
+    "Experiment 6 - Full - Different Covariance"
+)
+
+
+# ============================================================
+# 10. SPLIT DATA INTO 80% TRAINING AND 20% TESTING
+# ============================================================
+
+def split_data(X, y):
+
+    indices = np.random.permutation(len(X))
+
+    X = X[indices]
+    y = y[indices]
+
+    train_size = int(0.8 * len(X))
+
+    X_train = X[:train_size]
+    X_test = X[train_size:]
+
+    y_train = y[:train_size]
+    y_test = y[train_size:]
+
+    return (
+        X_train,
+        X_test,
+        y_train,
+        y_test
+    )
+
+
+# ============================================================
+# 11. MLE MEAN ESTIMATION
+# ============================================================
+
+def estimate_mean(data):
+
+    return np.mean(data, axis=0)
+
+
+# ============================================================
+# 12. MLE COVARIANCE ESTIMATION
+# ============================================================
+
+def estimate_covariance(data, mean):
+
+    difference = data - mean
+
+    covariance = (
+        difference.T @ difference
+    ) / len(data)
+
+    return covariance
+
+
+# ============================================================
+# 13. ESTIMATE PARAMETERS FOR THREE CLASSES
+# ============================================================
+
+def estimate_parameters(X_train, y_train):
+
+    estimated_means = []
+    estimated_covariances = []
+
+    for c in range(3):
+
+        class_data = X_train[
+            y_train == c
+        ]
+
+        mean = estimate_mean(
+            class_data
+        )
+
+        covariance = estimate_covariance(
+            class_data,
+            mean
+        )
+
+        estimated_means.append(
+            mean
+        )
+
+        estimated_covariances.append(
+            covariance
+        )
+
+    return (
+        np.array(estimated_means),
+        np.array(estimated_covariances)
+    )
+
+
+# ============================================================
+# 14. GAUSSIAN PDF
+# ============================================================
+
+def gaussian_pdf(
+    x,
+    mean,
+    covariance
+):
+
+    d = len(mean)
+
+    determinant = np.linalg.det(
+        covariance
+    )
+
+    inverse = np.linalg.inv(
+        covariance
+    )
+
+    difference = x - mean
+
+    exponent = -0.5 * (
+        difference.T
+        @ inverse
+        @ difference
+    )
+
+    constant = 1 / np.sqrt(
+        ((2 * np.pi) ** d)
+        * determinant
+    )
+
+    probability = (
+        constant
+        * np.exp(exponent)
+    )
+
+    return probability
+
+
+# ============================================================
+# 15. CLASSIFICATION
+# ============================================================
+
+def classify_data(
+    X_test,
+    estimated_means,
+    estimated_covariances
+):
+
+    predictions = []
+
+    for x in X_test:
+
+        probabilities = []
+
+        for c in range(3):
+
+            probability = gaussian_pdf(
+                x,
+                estimated_means[c],
+                estimated_covariances[c]
+            )
+
+            probabilities.append(
+                probability
+            )
+
+        predicted_class = np.argmax(
+            probabilities
+        )
+
+        predictions.append(
+            predicted_class
+        )
+
+    return np.array(predictions)
+
+
+# ============================================================
+# 16. CONFUSION MATRIX
+# ============================================================
+
+def calculate_confusion_matrix(
+    y_test,
+    y_pred
+):
+
+    matrix = np.zeros(
+        (3, 3),
+        dtype=int
+    )
+
+    for actual, predicted in zip(
+        y_test,
+        y_pred
+    ):
+
+        matrix[
+            int(actual),
+            int(predicted)
+        ] += 1
+
+    return matrix
+
+
+# ============================================================
+# 17. RUN ONE COMPLETE EXPERIMENT
+# ============================================================
+
+def run_experiment(
+    X,
+    y,
+    experiment_name
+):
+
+    print("\n")
+    print("=" * 70)
+    print(experiment_name)
+    print("=" * 70)
+
+
+    # --------------------------------------------------------
+    # 80/20 split
+    # --------------------------------------------------------
+
+    X_train, X_test, y_train, y_test = split_data(
+        X,
+        y
+    )
+
+    print("\nTraining samples:", len(X_train))
+    print("Testing samples :", len(X_test))
+
+
+    # --------------------------------------------------------
+    # MLE estimation
+    # --------------------------------------------------------
+
+    estimated_means, estimated_covariances = (
+        estimate_parameters(
+            X_train,
+            y_train
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # Display MLE parameters
+    # --------------------------------------------------------
+
+    print("\nMLE Estimated Parameters")
+
+    for c in range(3):
+
+        print("\nClass", c + 1)
+
+        print("Mean:")
+        print(
+            np.round(
+                estimated_means[c],
+                4
+            )
+        )
+
+        print("Covariance:")
+        print(
+            np.round(
+                estimated_covariances[c],
+                4
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # Classification
+    # --------------------------------------------------------
+
+    y_pred = classify_data(
+        X_test,
+        estimated_means,
+        estimated_covariances
+    )
+
+
+    # --------------------------------------------------------
+    # Accuracy
+    # --------------------------------------------------------
+
+    accuracy = (
+        np.mean(
+            y_pred == y_test
+        ) * 100
+    )
+
+
+    # --------------------------------------------------------
+    # Confusion matrix
+    # --------------------------------------------------------
+
+    matrix = calculate_confusion_matrix(
+        y_test,
+        y_pred
+    )
+
+
+    print("\nClassification Accuracy:")
+    print(
+        round(
+            accuracy,
+            2
+        ),
+        "%"
+    )
+
+    print("\nConfusion Matrix:")
+    print(matrix)
+
+
+    # --------------------------------------------------------
+    # Decision boundary grid
+    # --------------------------------------------------------
+
+    x_min = X[:, 0].min() - 1
+    x_max = X[:, 0].max() + 1
+
+    y_min = X[:, 1].min() - 1
+    y_max = X[:, 1].max() + 1
+
+
+    xx, yy = np.meshgrid(
+        np.linspace(
+            x_min,
+            x_max,
+            200
+        ),
+        np.linspace(
+            y_min,
+            y_max,
+            200
+        )
+    )
+
+
+    grid_points = np.c_[
+        xx.ravel(),
+        yy.ravel()
+    ]
+
+
+    # --------------------------------------------------------
+    # Classify grid points
+    # --------------------------------------------------------
+
+    grid_predictions = classify_data(
+        grid_points,
+        estimated_means,
+        estimated_covariances
+    )
+
+
+    Z = grid_predictions.reshape(
+        xx.shape
+    )
+
+
+    # --------------------------------------------------------
+    # Plot decision boundaries + test data
+    # --------------------------------------------------------
+
+    plt.figure(figsize=(9, 7))
+
+
+    # Decision regions
+    plt.contourf(
+        xx,
+        yy,
+        Z,
+        alpha=0.2
+    )
+
+
+    # Test data
+    for c in range(3):
+
+        data = X_test[
+            y_test == c
+        ]
+
+        plt.scatter(
+            data[:, 0],
+            data[:, 1],
+            s=5,
+            label="Class " + str(c + 1)
+        )
+
+
+    plt.xlabel("X")
+    plt.ylabel("Y")
+
+    plt.title(
+        experiment_name
+        + "\nDecision Boundaries and Test Data"
+    )
+
+    plt.legend()
+    plt.grid()
+
+    plt.show()
+
+
+    # Return results
+    return {
+        "name": experiment_name,
+        "accuracy": accuracy,
+        "confusion_matrix": matrix,
+        "means": estimated_means,
+        "covariances": estimated_covariances
+    }
+
+
+# ============================================================
+# 18. RUN ALL SIX EXPERIMENTS
+# ============================================================
+
+result1 = run_experiment(
+    X1,
+    y1,
+    "Experiment 1: Sigma^2 I - Same Covariance"
+)
+
+result2 = run_experiment(
+    X2,
+    y2,
+    "Experiment 2: Diagonal - Same Covariance"
+)
+
+result3 = run_experiment(
+    X3,
+    y3,
+    "Experiment 3: Full - Same Covariance"
+)
+
+result4 = run_experiment(
+    X4,
+    y4,
+    "Experiment 4: Sigma^2 I - Different Covariance"
+)
+
+result5 = run_experiment(
+    X5,
+    y5,
+    "Experiment 5: Diagonal - Different Covariance"
+)
+
+result6 = run_experiment(
+    X6,
+    y6,
+    "Experiment 6: Full - Different Covariance"
+)
+
+
+# ============================================================
+# 19. FINAL RESULTS
+# ============================================================
+
+results = [
+    result1,
+    result2,
+    result3,
+    result4,
+    result5,
+    result6
+]
+
+
+print("\n")
+print("=" * 70)
+print("FINAL COMPARISON OF ALL EXPERIMENTS")
+print("=" * 70)
+
+
+for result in results:
+
+    print(
+        "\n",
+        result["name"]
+    )
+
+    print(
+        "Accuracy:",
+        round(
+            result["accuracy"],
+            2
+        ),
+        "%"
+    )
+
+
+# ============================================================
+# 20. PRINT ALL CONFUSION MATRICES
+# ============================================================
+
+print("\n")
+print("=" * 70)
+print("ALL CONFUSION MATRICES")
+print("=" * 70)
+
+
+for result in results:
+
+    print("\n")
+    print(result["name"])
+
+    print(
+        result["confusion_matrix"]
+    )
+
+
+# ============================================================
+# 21. FINAL SUMMARY TABLE
+# ============================================================
+
+print("\n")
+print("=" * 70)
+print("SUMMARY TABLE")
+print("=" * 70)
+
+print(
+    "\nExperiment"
+    "\t\t\t\tAccuracy"
+)
+
+print("-" * 70)
+
+
+for result in results:
+
+    print(
+        result["name"],
+        "\t",
+        round(
+            result["accuracy"],
+            2
+        ),
+        "%"
+    )
