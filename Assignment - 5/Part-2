@@ -1,0 +1,328 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# 1. LOAD THE DATA
+# ============================================================
+
+train_data = np.loadtxt("/content/trian.txt", delimiter=",")
+dev_data = np.loadtxt("/content/dev.txt", delimiter=",")
+
+# First 2 columns = X and Y coordinates
+X_train = train_data[:, 0:2]
+y_train = train_data[:, 2].astype(int)
+
+X_dev = dev_data[:, 0:2]
+y_dev = dev_data[:, 2].astype(int)
+
+print("Training samples:", len(X_train))
+print("Development samples:", len(X_dev))
+
+
+# ============================================================
+# 2. FIND MLE MEAN FOR EACH CLASS
+# ============================================================
+
+classes = [1, 2, 3]
+
+means = {}
+
+print("\n===== MLE MEAN =====")
+
+for c in classes:
+
+    # Select samples belonging to this class
+    data = X_train[y_train == c]
+
+    # MLE mean
+    mean = np.mean(data, axis=0)
+
+    means[c] = mean
+
+    print("Class", c, "Mean =", mean)
+
+
+# ============================================================
+# 3. FIND MLE COVARIANCE FOR EACH CLASS
+# ============================================================
+
+covariances = {}
+
+print("\n===== MLE COVARIANCE =====")
+
+for c in classes:
+
+    data = X_train[y_train == c]
+
+    # Get mean of this class
+    mean = means[c]
+
+    # Difference from mean
+    difference = data - mean
+
+    # MLE covariance
+    covariance = (difference.T @ difference) / len(data)
+
+    covariances[c] = covariance
+
+    print("\nClass", c)
+    print(covariance)
+
+
+# ============================================================
+# 4. GAUSSIAN PDF
+# ============================================================
+
+def gaussian_pdf(x, mean, covariance):
+
+    d = len(mean)
+
+    determinant = np.linalg.det(covariance)
+
+    inverse = np.linalg.inv(covariance)
+
+    difference = x - mean
+
+    exponent = -0.5 * (
+        difference.T @ inverse @ difference
+    )
+
+    constant = 1 / np.sqrt(
+        ((2 * np.pi) ** d) * determinant
+    )
+
+    probability = constant * np.exp(exponent)
+
+    return probability
+
+
+# ============================================================
+# 5. CLASSIFY DEVELOPMENT DATA
+# ============================================================
+
+predicted_classes = []
+
+for x in X_dev:
+
+    probabilities = []
+
+    # Calculate Gaussian probability for each class
+    for c in classes:
+
+        probability = gaussian_pdf(
+            x,
+            means[c],
+            covariances[c]
+        )
+
+        probabilities.append(probability)
+
+    # Select class having highest probability
+    predicted_class = classes[
+        np.argmax(probabilities)
+    ]
+
+    predicted_classes.append(predicted_class)
+
+
+predicted_classes = np.array(predicted_classes)
+
+
+# ============================================================
+# 6. CALCULATE ACCURACY
+# ============================================================
+
+correct = np.sum(predicted_classes == y_dev)
+
+total = len(y_dev)
+
+accuracy = (correct / total) * 100
+
+print("\n===== CLASSIFICATION RESULT =====")
+
+print("Correct predictions :", correct)
+print("Total samples       :", total)
+
+print("Accuracy            :", accuracy, "%")
+
+
+# ============================================================
+# 7. CONFUSION MATRIX
+# ============================================================
+
+confusion_matrix = np.zeros((3, 3), dtype=int)
+
+for actual, predicted in zip(y_dev, predicted_classes):
+
+    confusion_matrix[actual - 1][predicted - 1] += 1
+
+
+print("\n===== CONFUSION MATRIX =====")
+
+print("             Predicted")
+print("             C1   C2   C3")
+
+for i in range(3):
+
+    print(
+        "Actual C" + str(i + 1),
+        confusion_matrix[i]
+    )
+
+
+# ============================================================
+# 8. PLOT TRAINING DATA
+# ============================================================
+
+plt.figure(figsize=(8, 6))
+
+for c in classes:
+
+    data = X_train[y_train == c]
+
+    plt.scatter(
+        data[:, 0],
+        data[:, 1],
+        label="Class " + str(c),
+        alpha=0.6
+    )
+
+    # Plot class mean
+    plt.scatter(
+        means[c][0],
+        means[c][1],
+        marker="X",
+        s=150
+    )
+
+
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.title("Training Data and Class Means")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+# ============================================================
+# 9. CREATE GRID FOR DECISION REGIONS
+# ============================================================
+
+x_min = X_train[:, 0].min() - 100
+x_max = X_train[:, 0].max() + 100
+
+y_min = X_train[:, 1].min() - 100
+y_max = X_train[:, 1].max() + 100
+
+xx, yy = np.meshgrid(
+    np.linspace(x_min, x_max, 300),
+    np.linspace(y_min, y_max, 300)
+)
+
+grid = np.c_[
+    xx.ravel(),
+    yy.ravel()
+]
+
+
+# ============================================================
+# 10. CLASSIFY EVERY GRID POINT
+# ============================================================
+
+grid_predictions = []
+
+for x in grid:
+
+    probabilities = []
+
+    for c in classes:
+
+        probability = gaussian_pdf(
+            x,
+            means[c],
+            covariances[c]
+        )
+
+        probabilities.append(probability)
+
+    predicted_class = classes[
+        np.argmax(probabilities)
+    ]
+
+    grid_predictions.append(predicted_class)
+
+
+grid_predictions = np.array(grid_predictions)
+
+Z = grid_predictions.reshape(xx.shape)
+
+
+# ============================================================
+# 11. PLOT DECISION REGIONS
+# ============================================================
+
+plt.figure(figsize=(9, 7))
+
+plt.contourf(
+    xx,
+    yy,
+    Z,
+    alpha=0.25
+)
+
+for c in classes:
+
+    data = X_dev[y_dev == c]
+
+    plt.scatter(
+        data[:, 0],
+        data[:, 1],
+        label="Class " + str(c),
+        edgecolors="black"
+    )
+
+
+# Plot class means
+for c in classes:
+
+    plt.scatter(
+        means[c][0],
+        means[c][1],
+        marker="X",
+        s=200,
+        edgecolors="black"
+    )
+
+
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.title("Gaussian Classifier Decision Regions")
+plt.legend()
+plt.grid()
+
+plt.show()
+
+
+# ============================================================
+# 12. FINAL SUMMARY
+# ============================================================
+
+print("\n======================================")
+print("           FINAL RESULTS")
+print("======================================")
+
+for c in classes:
+
+    print("\nClass", c)
+
+    print("Mean:")
+    print(means[c])
+
+    print("Covariance:")
+    print(covariances[c])
+
+
+print("\nClassification Accuracy =", accuracy, "%")
+
+print("\nConfusion Matrix:")
+print(confusion_matrix)
