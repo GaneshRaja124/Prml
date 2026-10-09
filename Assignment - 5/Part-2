@@ -127,6 +127,23 @@ for x in X_dev:
 
 predicted_classes = np.array(predicted_classes)
 
+# ============================================================
+# ROC CURVE FOR REAL DATASET
+# ============================================================
+
+real_roc_scores = get_gaussian_scores(
+    X_dev,
+    [means[c] for c in classes],
+    [covariances[c] for c in classes]
+)
+
+plot_multiclass_roc(
+    y_dev,
+    real_roc_scores,
+    classes,
+    "ROC Curve for Real Dataset"
+)
+
 
 # ============================================================
 # 6. CALCULATE ACCURACY
