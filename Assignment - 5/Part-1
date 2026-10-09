@@ -4,6 +4,102 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ============================================================
+# ROC CURVE FUNCTIONS
+# ============================================================
+
+def gaussian_log_score(x, mean, covariance):
+    d = len(mean)
+
+    sign, log_det = np.linalg.slogdet(covariance)
+
+    if sign <= 0:
+        covariance = covariance + np.eye(d) * 1e-6
+        sign, log_det = np.linalg.slogdet(covariance)
+
+    inverse = np.linalg.inv(covariance)
+    difference = x - mean
+
+    score = -0.5 * (
+        d * np.log(2 * np.pi)
+        + log_det
+        + difference.T @ inverse @ difference
+    )
+
+    return score
+
+
+def get_gaussian_scores(X, means, covariances):
+    scores = []
+
+    for x in X:
+        class_scores = []
+
+        for c in range(len(means)):
+            score = gaussian_log_score(
+                x, means[c], covariances[c]
+            )
+            class_scores.append(score)
+
+        scores.append(class_scores)
+
+    return np.asarray(scores)
+
+
+def plot_multiclass_roc(y_true, scores, class_labels, title):
+    plt.figure(figsize=(8, 6))
+
+    for index, class_label in enumerate(class_labels):
+
+        binary_true = (y_true == class_label).astype(int)
+        class_scores = scores[:, index]
+
+        order = np.argsort(class_scores)[::-1]
+        sorted_true = binary_true[order]
+
+        positives = np.sum(binary_true == 1)
+        negatives = np.sum(binary_true == 0)
+
+        if positives == 0 or negatives == 0:
+            continue
+
+        tpr = np.concatenate((
+            [0],
+            np.cumsum(sorted_true) / positives
+        ))
+
+        fpr = np.concatenate((
+            [0],
+            np.cumsum(1 - sorted_true) / negatives
+        ))
+
+        auc = np.trapz(tpr, fpr)
+
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"Class {class_label}: AUC = {auc:.4f}"
+        )
+
+    # Random classifier reference
+    plt.plot(
+        [0, 1], [0, 1],
+        "k--",
+        label="Random Classifier"
+    )
+
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(title)
+
+    plt.xlim(0, 1)
+    plt.ylim(0, 1.02)
+
+    plt.legend(loc="lower right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
+# ============================================================
 # 1. NUMBER OF DATA POINTS
 # ============================================================
 
@@ -656,7 +752,22 @@ def run_experiment(
         estimated_means,
         estimated_covariances
     )
+    # ============================================================
+    # ROC CURVE
+    # ============================================================
 
+    roc_scores = get_gaussian_scores(
+        X_test,
+        estimated_means,
+        estimated_covariances
+    )
+
+    plot_multiclass_roc(
+        y_test,
+        roc_scores,
+        [0, 1, 2],
+        "ROC Curve - " + experiment_name
+    )
 
     # --------------------------------------------------------
     # Accuracy
